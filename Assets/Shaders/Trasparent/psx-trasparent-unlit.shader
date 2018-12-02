@@ -33,7 +33,7 @@
 		v2f o;
 
 		//Vertex snapping
-		float4 snapToPixel = mul(UNITY_MATRIX_MVP,v.vertex);
+		float4 snapToPixel = UnityObjectToClipPos(v.vertex);
 		float4 vertex = snapToPixel;
 		vertex.xyz = snapToPixel.xyz / snapToPixel.w;
 		vertex.x = floor(160 * vertex.x) / 160;
