@@ -10,7 +10,11 @@ public class PSXPipeline : RenderPipeline
 		m_Asset = asset;
 	}
 
+	//
 	private CullResults cullResults;
+	private ScriptableCullingParameters cullingParams;
+	private DrawRendererSettings    drawSettings;
+	private FilterRenderersSettings filterSettings;
 
 	private int colorRT = Shader.PropertyToID("ColorRT");
 
@@ -39,9 +43,11 @@ public class PSXPipeline : RenderPipeline
 			bool gameViewCamera  = camera.cameraType == CameraType.Game;
 
 			// Culling
-			ScriptableCullingParameters cullingParams;
 			if(!CullResults.GetCullingParameters(camera, out cullingParams))
 				continue;
+
+			CullResults.Cull(ref cullingParams, context, ref cullResults);
+
 
 			if(sceneViewCamera && m_Asset.affineInSceneView == false)
 				Shader.DisableKeyword("_AFFINE_TEXTURES");
@@ -53,31 +59,41 @@ public class PSXPipeline : RenderPipeline
 				ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
 #endif
 
-			CullResults.Cull(ref cullingParams, context, ref cullResults);
-
 			context.SetupCameraProperties(camera);
 
 			//Clear
 			if(gameViewCamera == true)
 			{
-				RenderTextureDescriptor colorRT_desc = new RenderTextureDescriptor((int)m_Asset.w, (int)m_Asset.h, RenderTextureFormat.Default, 16);
+				int w = (int)m_Asset.w;
+				int h = (int)m_Asset.h;
+
+				if(m_Asset.wideScreen == true)
+					w = (int)(w / 12.0f * 16.0f);
+
+				RenderTextureDescriptor colorRT_desc = new RenderTextureDescriptor(w, h, RenderTextureFormat.Default, 16);
 
 				clear_CommandBuffer.GetTemporaryRT(colorRT, colorRT_desc);
 				clear_CommandBuffer.SetRenderTarget(colorRT);
 			}
+
 			clear_CommandBuffer.ClearRenderTarget(true, true, Color.black);
 			context.ExecuteCommandBuffer(clear_CommandBuffer);
 			clear_CommandBuffer.Clear();
 
 			// Opaque
-			DrawRendererSettings d_settings = new DrawRendererSettings(camera, new ShaderPassName("PSXPass"));
-			d_settings.sorting.flags = SortFlags.CommonOpaque;
+			drawSettings = new DrawRendererSettings(camera, new ShaderPassName("PSXPass"));
+			drawSettings.sorting.flags = SortFlags.CommonOpaque;
 
-			FilterRenderersSettings f_settings = new FilterRenderersSettings(true);
-			f_settings.renderQueueRange = RenderQueueRange.opaque;
+			filterSettings = new FilterRenderersSettings(true);
+			filterSettings.renderQueueRange = RenderQueueRange.opaque;
 
-			context.DrawRenderers(cullResults.visibleRenderers, ref d_settings, f_settings);
+			context.DrawRenderers(cullResults.visibleRenderers, ref drawSettings, filterSettings);
 			context.DrawSkybox(camera);
+
+			// Transparent
+			drawSettings.sorting.flags = SortFlags.CommonTransparent;
+			filterSettings.renderQueueRange = RenderQueueRange.transparent;
+			context.DrawRenderers(cullResults.visibleRenderers, ref drawSettings, filterSettings);
 
 			if(gameViewCamera == true)
 			{
