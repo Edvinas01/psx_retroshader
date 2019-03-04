@@ -16,8 +16,6 @@ public class PSXPipeline : RenderPipeline
 	private DrawRendererSettings    drawSettings;
 	private FilterRenderersSettings filterSettings;
 
-	private int colorRT = Shader.PropertyToID("ColorRT");
-
 	private CommandBuffer clear_CommandBuffer = new CommandBuffer
 	{
 		name = "Clear"
@@ -32,10 +30,8 @@ public class PSXPipeline : RenderPipeline
 		base.Render(context, cameras);
 		GraphicsSettings.lightsUseLinearIntensity = true;
 
-		Shader.EnableKeyword("_AFFINE_TEXTURES");
-
 		Vector4 frameBufferSize = new Vector4((float)m_Asset.w, (float)m_Asset.h, (float)m_Asset.w / 2.0f, (float)m_Asset.h / 2.0f);
-		Shader.SetGlobalVector("_FrameBufferSize", frameBufferSize);
+		Shader.SetGlobalVector(PSXShaderLib.Uniforms.FrameBufferSize, frameBufferSize);
 		
 		foreach(Camera camera in cameras)
 		{
@@ -50,9 +46,9 @@ public class PSXPipeline : RenderPipeline
 
 
 			if(sceneViewCamera && m_Asset.affineInSceneView == false)
-				Shader.DisableKeyword("_AFFINE_TEXTURES");
+				Shader.DisableKeyword(PSXShaderLib.Keywords._AFFINE_TEXTURES);
 			else
-				Shader.EnableKeyword("_AFFINE_TEXTURES");
+				Shader.EnableKeyword(PSXShaderLib.Keywords._AFFINE_TEXTURES);
 
 #if UNITY_EDITOR
 			if(sceneViewCamera)
@@ -72,16 +68,17 @@ public class PSXPipeline : RenderPipeline
 
 				RenderTextureDescriptor colorRT_desc = new RenderTextureDescriptor(w, h, RenderTextureFormat.Default, 16);
 
-				clear_CommandBuffer.GetTemporaryRT(colorRT, colorRT_desc);
-				clear_CommandBuffer.SetRenderTarget(colorRT);
+				clear_CommandBuffer.GetTemporaryRT (PSXShaderLib.ColorRT, colorRT_desc);
+				clear_CommandBuffer.SetRenderTarget(PSXShaderLib.ColorRT);
 			}
 
 			clear_CommandBuffer.ClearRenderTarget(true, true, Color.black);
 			context.ExecuteCommandBuffer(clear_CommandBuffer);
 			clear_CommandBuffer.Clear();
 
-			// Opaque
-			drawSettings = new DrawRendererSettings(camera, new ShaderPassName("PSXPass"));
+
+			//Opaque
+			drawSettings = new DrawRendererSettings(camera, PSXShaderLib.Passes.PSXPass);
 			drawSettings.sorting.flags = SortFlags.CommonOpaque;
 
 			filterSettings = new FilterRenderersSettings(true);
@@ -90,14 +87,15 @@ public class PSXPipeline : RenderPipeline
 			context.DrawRenderers(cullResults.visibleRenderers, ref drawSettings, filterSettings);
 			context.DrawSkybox(camera);
 
-			// Transparent
+			
+			//Transparent
 			drawSettings.sorting.flags = SortFlags.CommonTransparent;
 			filterSettings.renderQueueRange = RenderQueueRange.transparent;
 			context.DrawRenderers(cullResults.visibleRenderers, ref drawSettings, filterSettings);
 
 			if(gameViewCamera == true)
 			{
-				blit_CommandBuffer.Blit(colorRT, BuiltinRenderTextureType.CameraTarget);
+				blit_CommandBuffer.Blit(PSXShaderLib.ColorRT, BuiltinRenderTextureType.CameraTarget);
 				context.ExecuteCommandBuffer(blit_CommandBuffer);
 				blit_CommandBuffer.Clear();
 			}
