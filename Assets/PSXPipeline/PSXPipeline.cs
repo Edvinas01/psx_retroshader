@@ -38,25 +38,26 @@ public class PSXPipeline : RenderPipeline
 			bool sceneViewCamera = camera.cameraType == CameraType.SceneView;
 			bool gameViewCamera  = camera.cameraType == CameraType.Game;
 
-			// Culling
-			if(!CullResults.GetCullingParameters(camera, out cullingParams))
-				continue;
-
-			CullResults.Cull(ref cullingParams, context, ref cullResults);
-
 
 			if(sceneViewCamera && m_Asset.affineInSceneView == false)
 				Shader.DisableKeyword(PSXShaderLib.Keywords._AFFINE_TEXTURES);
 			else
 				Shader.EnableKeyword(PSXShaderLib.Keywords._AFFINE_TEXTURES);
 
+			
+			// Culling
+			if(!CullResults.GetCullingParameters(camera, out cullingParams))
+				continue;
+
 #if UNITY_EDITOR
 			if(sceneViewCamera)
 				ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
 #endif
-
+			
+			CullResults.Cull(ref cullingParams, context, ref cullResults);
 			context.SetupCameraProperties(camera);
 
+			
 			//Clear
 			if(gameViewCamera == true)
 			{
@@ -64,9 +65,14 @@ public class PSXPipeline : RenderPipeline
 				int h = (int)m_Asset.h;
 
 				if(m_Asset.wideScreen == true)
-					w = (int)(w / 12.0f * 16.0f);
+				{
+					int sw = Screen.width;
+					int sh = Screen.height;
+					float aspectRatio = (float)sw / (float)sh;
 
-				RenderTextureDescriptor colorRT_desc = new RenderTextureDescriptor(w, h, RenderTextureFormat.Default, 16);
+					//w = (int)(w / 12.0f * 16.0f);
+				}
+				RenderTextureDescriptor colorRT_desc = new RenderTextureDescriptor(w, h,RenderTextureFormat.ARGB32, 16);
 
 				clear_CommandBuffer.GetTemporaryRT (PSXShaderLib.ColorRT, colorRT_desc);
 				clear_CommandBuffer.SetRenderTarget(PSXShaderLib.ColorRT);

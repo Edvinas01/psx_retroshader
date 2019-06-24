@@ -8,3 +8,15 @@ float4 SnapToPixel(float4 vertex)
 	vertex.xyz *= vertex.w;
 return vertex;
 }
+
+half4 FilteredTexture(sampler2D tex, float2 uv, float4 texelSize)
+{
+	uv = uv * texelSize.zw;
+
+	half2 seam = floor(uv + 0.5h);
+	half2 fw = abs(ddx(uv)) + abs(ddy(uv));
+	uv = seam + clamp((uv - seam) / fw, -0.5h, 0.5h);
+
+return tex2D(tex, uv * texelSize.xy);
+}
+

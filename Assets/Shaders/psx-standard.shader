@@ -70,15 +70,24 @@ v2f vert (appdata v)
 #if _VERTEXCOLOR_ON
 	o.color = v.color.rgb;
 #endif
+
+/*
+	if (distance > unity_FogStart.z + unity_FogColor.a * 255)
+	{
+		o.pos = sqrt(-1.0);
+	}
+*/
+
 return o;
 }
 
 half4 frag (v2f i) : SV_Target
 {
 	half4 col = tex2D(_MainTex, i.uv);
-	
-	//fog???
-
+#if _VERTEXCOLOR_ON
+	col.rgb *= i.color;
+#endif
+	col.rgb = floor(col.rgb * 32.0) / 32.0;
 return col;
 }
 ENDCG
