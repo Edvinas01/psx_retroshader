@@ -66,7 +66,7 @@
 		//Cut out polygons
 		if (distance > unity_FogStart.z + unity_FogColor.a * 255)
 		{
-			o.pos.w = 0;
+			o.pos = sqrt(-1.0);
 		}
 
 
@@ -80,6 +80,7 @@
 		half4 c = tex2D(_MainTex, IN.uv_MainTex / IN.normal.r)*IN.color;
 		half4 color = c*(IN.colorFog.a);
 		color.rgb += IN.colorFog.rgb*(1 - IN.colorFog.a);
+
 		return color;
 	}
 		ENDCG
