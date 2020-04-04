@@ -8,6 +8,8 @@ You can see it in action here: https://www.youtube.com/watch?v=MxcLA--2v-Y
 ![ScreenShot](http://i.imgur.com/MS7sjt3.png)
 ![ScreenShot](http://i.imgur.com/my438QX.gif)
 
+Scriptable render pipeline support is implemented, however it must be updated to comply with the newer versions changes. Currently only up to 2018.4 has been verified to work.
+
 # Content & usage
 psx_retroshader includes 4 shaders, plus a simple posterize image effect (cPrecision.cs):
 - unlit
